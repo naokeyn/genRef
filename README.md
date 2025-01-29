@@ -16,6 +16,10 @@ cd [project-name]
 npm i
 ```
 
+## Referencesの形式について
+- [日本機械学会論文集](https://www.jsme.or.jp/publish/transact/for-authors.html#:~:text=web%E3%82%B5%E3%82%A4%E3%83%88)
+- [AHFE_Template_LastName_FirstName_PaperID.pdf](http://ahfe.org/files/AHFE_Template_LastName_FirstName_PaperID.pdf)
+- 
 
 クレジット
 > <a href="https://jp.freepik.com/icon/papers_7680177"><img src="./images/logo_64x64.png" width=24 style="margin-top: 8px" /> &nbsp; 本アイコンの著作権はVector Squadにあります</a>
