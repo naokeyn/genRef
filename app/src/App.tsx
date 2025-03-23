@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   Box,
   Button,
+  Center,
   Group,
   HStack,
   Input,
@@ -13,14 +14,18 @@ import {
 import ReferenceField from './components/custom/reference-field'
 import CopyGroup from './components/custom/copy-group'
 import Selector from './components/custom/selector'
+import { postData } from './components/utils/api'
 
 function App() {
   const [pageInfo, setPageInfo] = useState<{ title: string, url: string }>({ title: '', url: '' })
   const [date, setDate] = useState<string>('')
   const [reference, setReference] = useState<string>('')
+  const [authors, setAuthors] = useState<string>('Unknown')
   const [format, setFormat] = useState<string>('jsme-jp')
   const [isCustom, setIsCustom] = useState<boolean>(false)
   const [customFormat, setCustomFormat] = useState<string>('"[title]", available from <[url]>, ([year]/[month]/[day]).')
+  const [isGemini, setIsGemini] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   // 今日の日付を取得
   const month_en_list = [
@@ -50,17 +55,18 @@ function App() {
   }, [])
 
   const defaultFormats = {
-    'jsme-jp': '著者名, "[title]" available from <[url]>, (参照日 [year]年[month]月[day]日).',
-    'jsme-en': 'Authors, "[title]" available from <[url]>, (accessed on [day] [month_en] [year]).',
+    'jsme-jp': '[authors], "[title]" available from <[url]>, (参照日 [year]年[month]月[day]日).',
+    'jsme-en': '[authors], "[title]" available from <[url]>, (accessed on [day] [month_en] [year]).',
     'ahfe': '[title], [url].',
   }
 
-  const referenceFormat = (strFromat: string, pahgeInfo: { title: string, url: string }) => {
+  const referenceFormat = (strFromat: string, pahgeInfo: { title: string, url: string }, author: string = authors) => {
     const format = strFromat
     const title = pahgeInfo.title
     const url = pahgeInfo.url
 
     let ref = format
+    ref = ref.replace(/\[authors\]/g, author)
     ref = ref.replace(/\[title\]/g, title)
     ref = ref.replace(/\[url\]/g, url)
     ref = ref.replace(/\[year\]/g, String(year))
@@ -71,22 +77,38 @@ function App() {
     return ref
   }
 
-  const generateReference = (format: string, pageInfo: { title: string, url: string }) => {
+  const generateReference = (format: string, pageInfo: { title: string, url: string }, author: string = authors) => {
     setFormat(format)
     switch (format) {
       case 'jsme-jp':
-        setReference(referenceFormat(defaultFormats['jsme-jp'], pageInfo))
+        setReference(referenceFormat(defaultFormats['jsme-jp'], pageInfo, author))
         break
       case 'jsme-en':
-        setReference(referenceFormat(defaultFormats['jsme-en'], pageInfo))
+        setReference(referenceFormat(defaultFormats['jsme-en'], pageInfo, author))
         break
       case 'ahfe':
-        setReference(referenceFormat(defaultFormats['ahfe'], pageInfo))
+        setReference(referenceFormat(defaultFormats['ahfe'], pageInfo, author))
         break
       default:
-        setReference(referenceFormat(format, pageInfo))
+        setReference(referenceFormat(format, pageInfo, author))
         break
     }
+  }
+
+  const authorsEstimation = async (url: string) => {
+    setIsLoading(true)
+    const api_url: string = import.meta.env.VITE_API_URL || ""
+    const data = await postData(api_url, url)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    if (data === null) {
+      alert("Something went wrong. Please try again later.")
+      setIsLoading(false)
+      return
+    }
+    generateReference(format, pageInfo, data.authors)
+    alert(`Author name has been changed to "${data.authors}". \nIf you dont like this, click "Submit" again`)
+    setIsLoading(false)
+    setAuthors(data.authors)
   }
 
   return (
@@ -146,9 +168,29 @@ function App() {
           collections={[
             { label: "Unknown", value: "unknown" },
             { label: "Geminiで推定", value: "gemini" },
-            { label: "Whois検索", value: "whois" },
+            // { label: "Whois検索", value: "whois" },
           ]}
+          onSelectChange={(e) => setIsGemini(e.toString() === "gemini")}
         />
+
+        {
+          isGemini &&
+          <>
+            <Box>
+              <Center w="100%">
+                <form onSubmit={(e) => { 
+                  e.preventDefault()
+                  authorsEstimation(pageInfo.url)
+                }}>
+                  <Button type='submit' colorPalette={"teal"} disabled={isLoading}>
+                    {!isLoading ? "Geminiで推定": "Geminiが考え中..."}
+                  </Button>
+                </form>
+              </Center>
+            </Box>
+            <p>※テスト運用のため，間違った回答を生成する可能性があります．</p>
+          </>
+        }
 
         <hr />
 

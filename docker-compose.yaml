@@ -7,4 +7,10 @@ services:
       - "3000:3000"
     volumes:
       - .:/app
+    networks:
+      - api_proxy
     command: sh -c "cd app && npm install && npm run dev -- --host"
+
+networks:
+  api_proxy:
+    external: true
