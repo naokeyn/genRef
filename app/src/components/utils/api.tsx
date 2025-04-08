@@ -18,7 +18,7 @@ export const postData = async (url: string, value: string) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({url: value})
+      body: JSON.stringify([{url: value}])
     })
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`)
